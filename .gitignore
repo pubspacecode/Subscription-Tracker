@@ -1,7 +1,6 @@
 # Miscellaneous
 *.class
 *.log
-*.txt
 *.pyc
 *.swp
 .DS_Store
@@ -12,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+# Specific logs from development
 debug_import.log
 debug_pdf_import.log
 debug_pdf_import_v2.log
@@ -33,6 +33,7 @@ verbose_build.txt
 analysis.txt
 analysis_full.txt
 build_log.txt
+# ...
 
 # IntelliJ related
 *.iml
