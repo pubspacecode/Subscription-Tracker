@@ -27,13 +27,15 @@ class MainWrapper extends StatelessWidget {
       child: Scaffold(
         body: navigationShell,
         bottomNavigationBar: NavigationBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: _goBranch,
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
               selectedIcon: Icon(Icons.dashboard),
-              label: 'Subscriptions',
+              label: 'Subs',
             ),
             NavigationDestination(
               icon: Icon(Icons.calendar_month_outlined),

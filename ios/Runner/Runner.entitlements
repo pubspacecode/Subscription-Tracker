@@ -2,18 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- iCloud Documents — required for backup/restore via icloud_storage -->
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
-		<string>iCloud.com.antigravity.subscriptiontracker.subscriptionTracker</string>
+		<string>iCloud.com.mb.pm.subscriptiontracker</string>
 	</array>
+	<key>com.apple.developer.icloud-extended-share-access</key>
+	<array/>
 	<key>com.apple.developer.icloud-services</key>
 	<array>
 		<string>CloudDocuments</string>
 	</array>
 	<key>com.apple.developer.ubiquity-container-identifiers</key>
 	<array>
-		<string>iCloud.com.antigravity.subscriptiontracker.subscriptionTracker</string>
+		<string>iCloud.com.mb.pm.subscriptiontracker</string>
 	</array>
 </dict>
 </plist>

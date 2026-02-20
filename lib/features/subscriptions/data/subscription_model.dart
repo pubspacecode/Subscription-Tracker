@@ -82,10 +82,13 @@ class Subscription extends HiveObject {
   @HiveField(21)
   DateTime? startDate;
 
-  @HiveField(22)
+  @HiveField(23)
   String? usageNotificationFrequency;
 
-  @HiveField(23)
+  @HiveField(24)
+  int renewalReminderDays; // 0 for Same day, 1 for 1 day before, etc.
+
+  @HiveField(25)
   List<PriceRecord>? priceHistory;
 
   Subscription({
@@ -112,6 +115,7 @@ class Subscription extends HiveObject {
     this.recurrencePeriod = 'Month',
     this.startDate,
     this.usageNotificationFrequency,
+    this.renewalReminderDays = 1, // Default to 1 day before
     this.priceHistory,
   });
 
@@ -135,6 +139,7 @@ class Subscription extends HiveObject {
     String recurrencePeriod = 'Month',
     DateTime? startDate,
     String? usageNotificationFrequency,
+    int renewalReminderDays = 1,
     List<PriceRecord>? priceHistory,
   }) {
     return Subscription(
@@ -160,6 +165,7 @@ class Subscription extends HiveObject {
       recurrencePeriod: recurrencePeriod,
       startDate: startDate,
       usageNotificationFrequency: usageNotificationFrequency,
+      renewalReminderDays: renewalReminderDays,
       priceHistory: priceHistory,
     );
   }
@@ -187,6 +193,7 @@ class Subscription extends HiveObject {
         'recurrencePeriod': recurrencePeriod,
         'startDate': startDate?.toIso8601String(),
         'usageNotificationFrequency': usageNotificationFrequency,
+        'renewalReminderDays': renewalReminderDays,
         'priceHistory': priceHistory
             ?.map((p) => {'amount': p.amount, 'effectiveFrom': p.effectiveFrom.toIso8601String()})
             .toList(),
@@ -216,6 +223,7 @@ class Subscription extends HiveObject {
         recurrencePeriod: j['recurrencePeriod'] as String? ?? 'Month',
         startDate: j['startDate'] != null ? DateTime.parse(j['startDate'] as String) : null,
         usageNotificationFrequency: j['usageNotificationFrequency'] as String?,
+        renewalReminderDays: j['renewalReminderDays'] as int? ?? 1,
         priceHistory: (j['priceHistory'] as List<dynamic>?)
             ?.map((p) => PriceRecord(
                   amount: (p['amount'] as num).toDouble(),

@@ -13,7 +13,7 @@ import '../database/hive_service.dart';
 
 /// The iCloud container registered in the Apple Developer Portal and Xcode.
 const _containerId =
-    'iCloud.com.antigravity.subscriptiontracker.subscriptionTracker';
+    'iCloud.com.mb.pm.subscriptiontracker';
 
 /// The filename stored in the iCloud Documents container.
 const _backupFileName = 'subscriptions_backup.json';

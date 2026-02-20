@@ -1,7 +1,10 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// Hand-written adapter for MonthlySpendRecord (typeId: 7)
 
 part of 'monthly_spend_record.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
 
 class MonthlySpendRecordAdapter extends TypeAdapter<MonthlySpendRecord> {
   @override

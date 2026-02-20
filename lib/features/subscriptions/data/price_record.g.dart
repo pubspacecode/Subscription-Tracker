@@ -1,7 +1,10 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// Hand-written adapter for PriceRecord (typeId: 6)
 
 part of 'price_record.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
 
 class PriceRecordAdapter extends TypeAdapter<PriceRecord> {
   @override

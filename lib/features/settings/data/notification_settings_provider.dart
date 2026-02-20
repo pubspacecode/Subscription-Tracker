@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/hive_service.dart';
+import '../../../../core/notifications/notification_service.dart';
+import '../../subscriptions/data/subscription_repository.dart';
 
 class NotificationSettings {
-  final bool areNotificationsEnabled;
-  final TimeOfDay notificationTime;
+  final bool areRenewalNotificationsEnabled;
+  final TimeOfDay renewalNotificationTime;
+  final bool areUsageNotificationsEnabled;
+  final TimeOfDay usageNotificationTime;
 
   const NotificationSettings({
-    required this.areNotificationsEnabled,
-    required this.notificationTime,
+    required this.areRenewalNotificationsEnabled,
+    required this.renewalNotificationTime,
+    required this.areUsageNotificationsEnabled,
+    required this.usageNotificationTime,
   });
 
   NotificationSettings copyWith({
-    bool? areNotificationsEnabled,
-    TimeOfDay? notificationTime,
+    bool? areRenewalNotificationsEnabled,
+    TimeOfDay? renewalNotificationTime,
+    bool? areUsageNotificationsEnabled,
+    TimeOfDay? usageNotificationTime,
   }) {
     return NotificationSettings(
-      areNotificationsEnabled: areNotificationsEnabled ?? this.areNotificationsEnabled,
-      notificationTime: notificationTime ?? this.notificationTime,
+      areRenewalNotificationsEnabled: areRenewalNotificationsEnabled ?? this.areRenewalNotificationsEnabled,
+      renewalNotificationTime: renewalNotificationTime ?? this.renewalNotificationTime,
+      areUsageNotificationsEnabled: areUsageNotificationsEnabled ?? this.areUsageNotificationsEnabled,
+      usageNotificationTime: usageNotificationTime ?? this.usageNotificationTime,
     );
   }
 }
@@ -25,35 +35,66 @@ class NotificationSettings {
 final notificationSettingsProvider = NotifierProvider<NotificationSettingsNotifier, NotificationSettings>(NotificationSettingsNotifier.new);
 
 class NotificationSettingsNotifier extends Notifier<NotificationSettings> {
-  static const _enabledKey = 'notifications_enabled';
-  static const _hourKey = 'notification_time_hour';
-  static const _minuteKey = 'notification_time_minute';
+  static const _renewalEnabledKey = 'notifications_enabled';
+  static const _renewalHourKey = 'notification_time_hour';
+  static const _renewalMinuteKey = 'notification_time_minute';
+  static const _usageEnabledKey = 'usage_notifications_enabled';
+  static const _usageHourKey = 'usage_notification_time_hour';
+  static const _usageMinuteKey = 'usage_notification_time_minute';
 
   @override
   NotificationSettings build() {
     final box = HiveService.settingsBox;
-    final enabled = box.get(_enabledKey, defaultValue: true);
-    final hour = box.get(_hourKey, defaultValue: 9);
-    final minute = box.get(_minuteKey, defaultValue: 0);
+    
+    final renewalEnabled = box.get(_renewalEnabledKey, defaultValue: true);
+    final renewalHour = box.get(_renewalHourKey, defaultValue: 9);
+    final renewalMinute = box.get(_renewalMinuteKey, defaultValue: 0);
+    
+    final usageEnabled = box.get(_usageEnabledKey, defaultValue: false);
+    final usageHour = box.get(_usageHourKey, defaultValue: 10);
+    final usageMinute = box.get(_usageMinuteKey, defaultValue: 0);
 
     return NotificationSettings(
-      areNotificationsEnabled: enabled,
-      notificationTime: TimeOfDay(hour: hour, minute: minute),
+      areRenewalNotificationsEnabled: renewalEnabled,
+      renewalNotificationTime: TimeOfDay(hour: renewalHour, minute: renewalMinute),
+      areUsageNotificationsEnabled: usageEnabled,
+      usageNotificationTime: TimeOfDay(hour: usageHour, minute: usageMinute),
     );
   }
 
-  Future<void> toggleNotifications(bool value) async {
-    state = state.copyWith(areNotificationsEnabled: value);
+  Future<void> toggleRenewalNotifications(bool value) async {
+    state = state.copyWith(areRenewalNotificationsEnabled: value);
     final box = HiveService.settingsBox;
-    await box.put(_enabledKey, value);
-    // TODO: Cancel or Reschedule all notifications based on this toggle?
-    // For now, we assume this flag checks before sending or when handling the event.
+    await box.put(_renewalEnabledKey, value);
+    await _rescheduleAll();
   }
 
-  Future<void> updateTime(TimeOfDay newTime) async {
-    state = state.copyWith(notificationTime: newTime);
+  Future<void> updateRenewalTime(TimeOfDay newTime) async {
+    state = state.copyWith(renewalNotificationTime: newTime);
     final box = HiveService.settingsBox;
-    await box.put(_hourKey, newTime.hour);
-    await box.put(_minuteKey, newTime.minute);
+    await box.put(_renewalHourKey, newTime.hour);
+    await box.put(_renewalMinuteKey, newTime.minute);
+    await _rescheduleAll();
+  }
+
+  Future<void> toggleUsageNotifications(bool value) async {
+    state = state.copyWith(areUsageNotificationsEnabled: value);
+    final box = HiveService.settingsBox;
+    await box.put(_usageEnabledKey, value);
+    await _rescheduleAll();
+  }
+
+  Future<void> updateUsageTime(TimeOfDay newTime) async {
+    state = state.copyWith(usageNotificationTime: newTime);
+    final box = HiveService.settingsBox;
+    await box.put(_usageHourKey, newTime.hour);
+    await box.put(_usageMinuteKey, newTime.minute);
+    await _rescheduleAll();
+  }
+
+  Future<void> _rescheduleAll() async {
+    final repository = ref.read(subscriptionRepositoryProvider);
+    final subs = repository.getAllSubscriptions();
+    await NotificationService().rescheduleAll(subs);
   }
 }

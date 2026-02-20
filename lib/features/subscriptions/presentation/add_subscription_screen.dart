@@ -137,6 +137,16 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
             _analyzeImage(widget.initialImagePath!);
         });
       }
+      
+      // Set default notification offset if not set
+      if (widget.subscription != null) {
+        final days = widget.subscription!.renewalReminderDays;
+        if (days == 0) _selectedNotificationOption = 'Same day';
+        else if (days == 1) _selectedNotificationOption = '1 day before';
+        else if (days == 2) _selectedNotificationOption = '2 days before';
+        else if (days == 3) _selectedNotificationOption = '3 days before';
+        else if (days == 7) _selectedNotificationOption = '1 week before';
+      }
     }
   }
 
@@ -586,102 +596,7 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
 
 
   void _saveSubscription() {
-
-    // Check Free Tier Limit
-    final repository = ref.read(subscriptionRepositoryProvider);
-    final currentCount = repository.getAllSubscriptions().where((s) => s.isActive).length;
-    
-    // Hardcoded limit for MVP
-    if (widget.subscription == null && currentCount >= 5) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
-      return;
-    }
-
-    if (_formKey.currentState!.validate()) {
-      final name = _nameController.text.trim();
-      final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
-      
-      if (widget.subscription == null || !widget.subscription!.isInBox) {
-        // Create new
-        final newSubscription = Subscription.create(
-          name: name,
-          amount: amount,
-          currency: _currency,
-          billingCycle: _billingCycle,
-          nextRenewalDate: _nextRenewalDate,
-          category: _category,
-          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-          reminderEnabled: _reminderEnabled,
-          url: _urlController.text.trim().isEmpty ? null : _urlController.text.trim(),
-          paymentMethod: _paymentMethod == 'None' ? null : _paymentMethod,
-          isFreeTrial: _isFreeTrial,
-          listName: _listName,
-          iconCodePoint: _iconCodePoint,
-          colorValue: _colorValue,
-          imagePath: _imageFile?.path,
-          recurrenceFrequency: _recurrenceFrequency,
-          recurrencePeriod: _recurrencePeriod,
-          startDate: _startDate,
-          usageNotificationFrequency: _usageNotificationFrequency,
-        );
-
-        repository.addSubscription(newSubscription);
-        
-        if (newSubscription.reminderEnabled) {
-          // Calculate notification date based on selection
-          int daysBefore = 1;
-          if (_selectedNotificationOption == 'Same day') {
-            daysBefore = 0;
-          } else if (_selectedNotificationOption == '1 day before') {
-            daysBefore = 1;
-          } else if (_selectedNotificationOption == '2 days before') {
-            daysBefore = 2;
-          } else if (_selectedNotificationOption == '3 days before') {
-            daysBefore = 3;
-          } else if (_selectedNotificationOption == '1 week before') {
-            daysBefore = 7;
-          }
-
-          NotificationService().scheduleNotification(
-            id: newSubscription.id.hashCode,
-            title: 'Renewal Reminder: ${newSubscription.name}',
-            body: 'Your subscription for ${newSubscription.name} is renewing soon.',
-            scheduledDate: newSubscription.nextRenewalDate.subtract(Duration(days: daysBefore)),
-          );
-        }
-      } else {
-        // Update existing logic
-        widget.subscription!.name = name;
-        widget.subscription!.amount = amount;
-        widget.subscription!.currency = _currency;
-        widget.subscription!.billingCycle = _billingCycle;
-        widget.subscription!.nextRenewalDate = _nextRenewalDate;
-        widget.subscription!.category = _category;
-        widget.subscription!.notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
-        widget.subscription!.reminderEnabled = _reminderEnabled;
-        widget.subscription!.url = _urlController.text.trim().isEmpty ? null : _urlController.text.trim();
-        widget.subscription!.paymentMethod = _paymentMethod == 'None' ? null : _paymentMethod;
-        widget.subscription!.isFreeTrial = _isFreeTrial;
-        widget.subscription!.listName = _listName;
-        widget.subscription!.iconCodePoint = _iconCodePoint; 
-        widget.subscription!.colorValue = _colorValue;
-        widget.subscription!.imagePath = _imageFile?.path;
-        widget.subscription!.recurrenceFrequency = _recurrenceFrequency;
-        widget.subscription!.recurrencePeriod = _recurrencePeriod;
-        widget.subscription!.startDate = _startDate;
-        widget.subscription!.usageNotificationFrequency = _usageNotificationFrequency;
-        
-        repository.updateSubscription(widget.subscription!);
-      }
-      
-      if (widget.subscription == null || !widget.subscription!.isInBox) {
-        // Adding: Go back (returns true to indicate success)
-        context.pop(true);
-      } else {
-        // Editing: Go back to Details
-        context.pop();
-      } 
-    } else {
+    if (!_formKey.currentState!.validate()) {
       showDialog(
         context: context, 
         builder: (context) => AlertDialog(
@@ -696,7 +611,128 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
           ],
         )
       );
+      return;
     }
+
+    final repository = ref.read(subscriptionRepositoryProvider);
+    final name = _nameController.text.trim();
+
+    // 1. Check Free Tier Limit
+    final currentCount = repository.getAllSubscriptions().where((s) => s.isActive).length;
+    if (widget.subscription == null && currentCount >= 5) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
+      return;
+    }
+
+    // 2. Check for duplicate name (case-insensitive, exclude self if editing)
+    final isDuplicate = repository.getAllSubscriptions().any((s) => 
+      s.name.toLowerCase() == name.toLowerCase() && 
+      (widget.subscription == null || s.id != widget.subscription!.id)
+    );
+
+    if (isDuplicate) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1C1C1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Duplicate Name', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: const Text(
+            'A subscription with this name already exists. Save anyway?', 
+            style: TextStyle(color: Colors.white70, fontSize: 14)
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _performSave();
+              },
+              child: const Text('Save Anyway', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _performSave();
+    }
+  }
+
+  void _performSave() {
+    final repository = ref.read(subscriptionRepositoryProvider);
+    final name = _nameController.text.trim();
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    
+    // Map offset
+    int daysBefore = 1;
+    if (_selectedNotificationOption == 'Same day') daysBefore = 0;
+    else if (_selectedNotificationOption == '1 day before') daysBefore = 1;
+    else if (_selectedNotificationOption == '2 days before') daysBefore = 2;
+    else if (_selectedNotificationOption == '3 days before') daysBefore = 3;
+    else if (_selectedNotificationOption == '1 week before') daysBefore = 7;
+
+    if (widget.subscription == null || !widget.subscription!.isInBox) {
+      // Create new
+      final newSubscription = Subscription.create(
+        name: name,
+        amount: amount,
+        currency: _currency,
+        billingCycle: _billingCycle,
+        nextRenewalDate: _nextRenewalDate,
+        category: _category,
+        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        reminderEnabled: _reminderEnabled,
+        url: _urlController.text.trim().isEmpty ? null : _urlController.text.trim(),
+        paymentMethod: _paymentMethod == 'None' ? null : _paymentMethod,
+        isFreeTrial: _isFreeTrial,
+        listName: _listName,
+        iconCodePoint: _iconCodePoint,
+        colorValue: _colorValue,
+        imagePath: _imageFile?.path,
+        recurrenceFrequency: _recurrenceFrequency,
+        recurrencePeriod: _recurrencePeriod,
+        startDate: _startDate,
+        usageNotificationFrequency: _usageNotificationFrequency,
+        renewalReminderDays: daysBefore,
+      );
+
+      repository.addSubscription(newSubscription);
+    } else {
+      // Update existing logic
+      widget.subscription!.name = name;
+      widget.subscription!.amount = amount;
+      widget.subscription!.currency = _currency;
+      widget.subscription!.billingCycle = _billingCycle;
+      widget.subscription!.nextRenewalDate = _nextRenewalDate;
+      widget.subscription!.category = _category;
+      widget.subscription!.notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+      widget.subscription!.reminderEnabled = _reminderEnabled;
+      widget.subscription!.url = _urlController.text.trim().isEmpty ? null : _urlController.text.trim();
+      widget.subscription!.paymentMethod = _paymentMethod == 'None' ? null : _paymentMethod;
+      widget.subscription!.isFreeTrial = _isFreeTrial;
+      widget.subscription!.listName = _listName;
+      widget.subscription!.iconCodePoint = _iconCodePoint; 
+      widget.subscription!.colorValue = _colorValue;
+      widget.subscription!.imagePath = _imageFile?.path;
+      widget.subscription!.recurrenceFrequency = _recurrenceFrequency;
+      widget.subscription!.recurrencePeriod = _recurrencePeriod;
+      widget.subscription!.startDate = _startDate;
+      widget.subscription!.usageNotificationFrequency = _usageNotificationFrequency;
+      widget.subscription!.renewalReminderDays = daysBefore;
+      
+      repository.updateSubscription(widget.subscription!);
+    }
+    
+    if (widget.subscription == null || !widget.subscription!.isInBox) {
+      // Adding: Go back (returns true to indicate success)
+      context.pop(true);
+    } else {
+      // Editing: Go back to Details
+      context.pop();
+    } 
   }
 
   @override

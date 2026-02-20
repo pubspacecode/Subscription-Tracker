@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_document_scanner/google_mlkit_document_scanner.dart';
 import 'package:intl/intl.dart';
@@ -189,6 +191,57 @@ class _SubscriptionSelectionScreenState extends ConsumerState<SubscriptionSelect
 
   Future<void> _scanDocument() async {
     try {
+      if (Platform.isIOS) {
+        // Fallback for iOS since google_mlkit_document_scanner is Android-only
+        final ImagePicker picker = ImagePicker();
+        final XFile? image = await showModalBottomSheet<XFile?>(
+          context: context,
+          backgroundColor: const Color(0xFF1C1C1E),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (BuildContext context) {
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Colors.white),
+                    title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
+                    onTap: () async {
+                      final file = await picker.pickImage(source: ImageSource.camera);
+                      if (context.mounted) Navigator.pop(context, file);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Colors.white),
+                    title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
+                    onTap: () async {
+                      final file = await picker.pickImage(source: ImageSource.gallery);
+                      if (context.mounted) Navigator.pop(context, file);
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+
+        if (image == null) return;
+
+        if (mounted) {
+          context.push(
+            '/add_subscription?t=${DateTime.now().millisecondsSinceEpoch}',
+            extra: {
+              'imagePath': image.path,
+              'shouldParse': true,
+            },
+          );
+        }
+        return;
+      }
+
+      // Android specific scanner
       final options = DocumentScannerOptions(
         mode: ScannerMode.filter, 
         pageLimit: 1,
@@ -208,7 +261,6 @@ class _SubscriptionSelectionScreenState extends ConsumerState<SubscriptionSelect
           },
         );
       }
-
     } catch (e) {
       debugPrint('Error scanning: $e');
       if (mounted) {

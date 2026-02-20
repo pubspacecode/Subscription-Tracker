@@ -25,6 +25,7 @@ class SubscriptionRepository {
 
   Future<void> addSubscription(Subscription subscription) async {
     await _box.put(subscription.id, subscription);
+    await NotificationService().rescheduleSub(subscription);
     await _afterWrite();
   }
 
@@ -42,6 +43,7 @@ class SubscriptionRepository {
       subscription.priceHistory = history;
     }
     await subscription.save();
+    await NotificationService().rescheduleSub(subscription);
     await _afterWrite();
   }
 
@@ -50,6 +52,8 @@ class SubscriptionRepository {
     if (subscription != null) {
       subscription.isDeleted = true;
       await subscription.save();
+      await NotificationService().cancelNotification(NotificationService().getIdFromUuid(id));
+      await NotificationService().cancelNotification((id.hashCode & 0x0FFFFFFF) | 0x10000000); // usage id
     }
     await _afterWrite();
   }
@@ -59,10 +63,9 @@ class SubscriptionRepository {
     yield* _box.watch().map((_) => _box.values.where((s) => !s.isDeleted).toList());
   }
 
-  /// Called after every write: records spend snapshot and reschedules notifications.
+  /// Called after every write: records spend snapshot.
   Future<void> _afterWrite() async {
     final activeSubs = _box.values.where((s) => !s.isDeleted && s.isActive).toList();
     await SpendHistoryService.record(activeSubs);
-    await NotificationService().rescheduleAll(activeSubs);
   }
 }

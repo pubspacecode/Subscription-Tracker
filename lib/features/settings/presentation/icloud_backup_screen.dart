@@ -94,10 +94,34 @@ class _ICloudBackupScreenState extends State<ICloudBackupScreen> {
 
   void _showSnack(String msg, {required bool isError}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? Colors.red.shade800 : const Color(0xFF2A2A2E),
+      content: Row(
+        children: [
+          Icon(
+            isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              msg,
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: isError ? Colors.red.shade900 : const Color(0xFF1C1C1E),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      duration: const Duration(seconds: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isError ? Colors.red.withOpacity(0.3) : const Color(0xFF6C63FF).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      elevation: 0,
     ));
   }
 

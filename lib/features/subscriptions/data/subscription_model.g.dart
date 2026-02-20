@@ -39,15 +39,16 @@ class SubscriptionAdapter extends TypeAdapter<Subscription> {
       recurrenceFrequency: fields[19] as int,
       recurrencePeriod: fields[20] as String,
       startDate: fields[21] as DateTime?,
-      usageNotificationFrequency: fields[22] as String?,
-      priceHistory: (fields[23] as List?)?.cast<PriceRecord>(),
+      usageNotificationFrequency: fields[23] as String?,
+      renewalReminderDays: fields[24] as int,
+      priceHistory: (fields[25] as List?)?.cast<PriceRecord>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Subscription obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -92,9 +93,11 @@ class SubscriptionAdapter extends TypeAdapter<Subscription> {
       ..write(obj.recurrencePeriod)
       ..writeByte(21)
       ..write(obj.startDate)
-      ..writeByte(22)
-      ..write(obj.usageNotificationFrequency)
       ..writeByte(23)
+      ..write(obj.usageNotificationFrequency)
+      ..writeByte(24)
+      ..write(obj.renewalReminderDays)
+      ..writeByte(25)
       ..write(obj.priceHistory);
   }
 

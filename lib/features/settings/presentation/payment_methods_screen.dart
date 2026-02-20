@@ -120,8 +120,22 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(method.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                if (method.last4Digits != null && method.last4Digits!.isNotEmpty)
-                  Text('•••• ${method.last4Digits}', style: const TextStyle(color: Colors.grey, fontSize: 14)),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      method.type.toUpperCase(),
+                      style: TextStyle(color: Colors.grey.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                    ),
+                    if (method.last4Digits != null && method.last4Digits!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '•••• ${method.last4Digits}',
+                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),

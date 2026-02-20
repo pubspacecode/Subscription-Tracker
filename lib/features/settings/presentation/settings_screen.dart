@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/presentation/widgets/bounceable.dart';
 import '../../settings/data/currency_provider.dart';
 import 'icloud_backup_screen.dart';
+import '../data/notification_settings_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -73,7 +74,16 @@ class SettingsScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.notifications,
                 title: 'Notifications',
-                trailing: const Text('On', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                trailing: Consumer(
+                  builder: (context, ref, _) {
+                    final settings = ref.watch(notificationSettingsProvider);
+                    final isOn = settings.areRenewalNotificationsEnabled || settings.areUsageNotificationsEnabled;
+                    return Text(
+                      isOn ? 'On' : 'Off',
+                      style: const TextStyle(color: Colors.grey, fontSize: 16),
+                    );
+                  },
+                ),
                 showArrow: true,
                 isLast: true,
                 onTap: () => context.push('/settings/notifications'),

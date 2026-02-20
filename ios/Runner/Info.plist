@@ -53,14 +53,14 @@
 	<string>Subscription Tracker uses notifications to remind you before your subscriptions renew so you're never caught off guard.</string>
 	<key>NSUbiquitousContainers</key>
 	<dict>
-		<key>iCloud.com.antigravity.subscriptiontracker.subscriptionTracker</key>
+		<key>iCloud.com.mb.pm.subscriptiontracker</key>
 		<dict>
 			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
-			<false/>
+			<true/>
 			<key>NSUbiquitousContainerName</key>
 			<string>Subscription Tracker Backup</string>
 			<key>NSUbiquitousContainerSupportedFolderLevels</key>
-			<string>None</string>
+			<string>One</string>
 		</dict>
 	</dict>
 </dict>

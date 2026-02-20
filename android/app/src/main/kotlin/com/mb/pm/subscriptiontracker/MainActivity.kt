@@ -1,4 +1,4 @@
-package com.antigravity.subscriptiontracker.subscription_tracker
+package com.mb.pm.subscriptiontracker
 
 import io.flutter.embedding.android.FlutterActivity
 
